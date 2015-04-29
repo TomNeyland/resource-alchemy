@@ -9,7 +9,9 @@
 # Copyright (c) 2015, Tom Neyland <tcneyland+github@gmail.com>
 
 from setuptools import setup, find_packages
-from resourcealchemy import __version__
+#from resourcealchemy.version import __version__
+
+__version__ = '0.1.0'
 
 tests_require = [
     'mock',
@@ -51,6 +53,9 @@ Easily create SqlAlchemy backed API endpoints and resources
     install_requires=[
         # add your dependencies here
         # remember to use 'package-name>=x.y.z,<x.y+1.0' notation (this way you get bugfixes)
+        'sqlalchemy>=1.0',
+        'python-dateutil>=2.4.2',
+        'ujson>=1.3'
     ],
     extras_require={
         'tests': tests_require,
