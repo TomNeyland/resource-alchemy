@@ -14,8 +14,19 @@ python:
 
 install:
     # install python requirements
+    - pip install coveralls # should this be in setup.py?
     - make setup
-
 script:
     # run tests
     - make test
+
+notifications:
+  webhooks:
+    urls:
+      - 'https://webhooks.gitter.im/e/f69a6337e341708fd45f'
+    on_success: always  # options: [always|never|change] default: always
+    on_failure: always  # options: [always|never|change] default: always
+    on_start: false     # default: false
+
+after_success:
+  - coveralls
