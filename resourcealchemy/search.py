@@ -36,7 +36,9 @@ def session_query(session, model):
 
     """
     return model.query if hasattr(model, 'query') else session.query(model)
-#from .helpers import get_related_association_proxy_model
+
+
+# from .helpers import get_related_association_proxy_model
 
 
 def _sub_operator(model, argument, fieldname):
@@ -49,7 +51,7 @@ def _sub_operator(model, argument, fieldname):
     if isinstance(model, InstrumentedAttribute):
         submodel = model.property.mapper.class_
     elif isinstance(model, AssociationProxy):
-    	raise TypeError("Can not filter on association proxy objects (for now)")
+        raise TypeError("Can not filter on association proxy objects (for now)")
         #submodel = get_related_association_proxy_model(model)
     else:  # TODO what to do here?
         pass
@@ -123,6 +125,7 @@ OPERATORS = {
 
 
 class OrderBy(object):
+
     """Represents an "order by" in a SQL query expression."""
 
     def __init__(self, field, direction='asc'):
@@ -143,6 +146,7 @@ class OrderBy(object):
 
 
 class Filter(object):
+
     """Represents a filter to apply to a SQL query.
 
     A filter can be, for example, a comparison operator applied to a field of a
@@ -212,6 +216,7 @@ class Filter(object):
 
 
 class SearchParameters(object):
+
     """Aggregates the parameters for a search, including filters, search type,
     limit, offset, and order by directives.
 
@@ -294,6 +299,7 @@ class SearchParameters(object):
 
 
 class QueryBuilder(object):
+
     """Provides a static function for building a SQLAlchemy query object based
     on a :class:`SearchParameters` instance.
 

@@ -10,7 +10,6 @@
 
 from preggy import expect
 import resourcealchemy
-
 from tests.base import TestCase
 
 
@@ -18,11 +17,11 @@ class ExportsTestCase(TestCase):
 
     def test_resourcealchemy_exports(self):
 
-    	# Base Resource Classes
-    	expect(resourcealchemy.ModelResource).not_to_be_null()
+        # Base Resource Classes
+        expect(resourcealchemy.ModelResource).not_to_be_null()
         expect(resourcealchemy.ApiResource).not_to_be_null()
 
-    	# Basic fields
+        # Basic fields
         expect(resourcealchemy.Field).not_to_be_null()
         expect(resourcealchemy.Relationship).not_to_be_null()
         expect(resourcealchemy.ListRelationship).not_to_be_null()
@@ -36,8 +35,3 @@ class ExportsTestCase(TestCase):
         expect(resourcealchemy.ReadOnlyAuthorization).not_to_be_null()
         expect(resourcealchemy.PropertyAuthorization).not_to_be_null()
         expect(resourcealchemy.NoAuthorization).not_to_be_null()
-
-
-
-
-

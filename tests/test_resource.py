@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+
+#!/usr/bin/env python# -*- coding: utf-8 -*-
 
 # This file is part of resourcealchemy.
 # https://github.com/TomNeyland/resource-alchemy
@@ -27,7 +27,6 @@ class ResourceTestCase(TestCase):
     def setUp(self):
 
         self.person1_raw = dict(first_name='Ferdinand', last_name='Magellen', nick='Ferd')
-
 
     def test_decode_person1(self):
 
