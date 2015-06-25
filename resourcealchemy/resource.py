@@ -452,18 +452,3 @@ class ApiResource(ModelResource):
             }
 
         return response
-
-    @classmethod
-    def register_resource(cls, service):
-
-        name_suffix = cls.meta.name or convert_name(cls.meta.model.__name__)
-
-        for func_name in ('get', 'update', 'search', 'create', 'delete'):
-            name = func_name + '_' + name_suffix
-            func = getattr(cls, func_name)
-            func_args = dict(name=name, login_required=True)
-            func_options = cls.meta.method_options.get(func_name, {})
-            if func_options != False:
-                func_args.update(func_options)
-                register_func = service.register(**func_args)
-                register_func(func)
