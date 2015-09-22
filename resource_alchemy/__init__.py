@@ -1,33 +1,33 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# This file is part of resourcealchemy.
+# This file is part of resource_alchemy.
 # https://github.com/TomNeyland/resource-alchemy
 
 # Licensed under the TBD license:
 # http://www.opensource.org/licenses/TBD-license
 # Copyright (c) 2015, Tom Neyland <tcneyland+github@gmail.com>
 
-from resourcealchemy.version import __version__  # NOQA
+from resource_alchemy.version import __version__  # NOQA
 
-import resourcealchemy.fields as fields
-import resourcealchemy.resource as resource
-import resourcealchemy.authorization as authorization
+import resource_alchemy.fields as fields
+import resource_alchemy.resource as resource
+import resource_alchemy.authorization as authorization
 
-from resourcealchemy.fields import (Field,
+from resource_alchemy.fields import (Field,
                                     Relationship,
                                     ListRelationship,
                                     FilteredListRelationship,
                                     DateTimeField,
                                     IntervalField)
 
-from resourcealchemy.resource import (Resource,
+from resource_alchemy.resource import (Resource,
 									  JsonResource,
 									  ModelResource,
                                       ApiResource)
 
 
-from resourcealchemy.authorization import (FullAuthorization,
+from resource_alchemy.authorization import (FullAuthorization,
                                            NoAuthorization,
                                            ReadOnlyAuthorization,
                                            PropertyAuthorization)

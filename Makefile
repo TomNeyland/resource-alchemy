@@ -1,4 +1,4 @@
-# This file is part of resourcealchemy.
+# This file is part of resource_alchemy.
 # https://github.com/TomNeyland/resource-alchemy
 
 # Licensed under the TBD license:
@@ -31,4 +31,4 @@ tox:
 	@tox
 
 #docs:
-	#@cd resourcealchemy/docs && make html && open _build/html/index.html
+	#@cd resource_alchemy/docs && make html && open _build/html/index.html
