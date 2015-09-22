@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# This file is part of resourcealchemy.
+# This file is part of resource_alchemy.
 # https://github.com/TomNeyland/resource-alchemy
 
 # Licensed under the TBD license:
@@ -9,7 +9,7 @@
 # Copyright (c) 2015, Tom Neyland <tcneyland+github@gmail.com>
 
 from setuptools import setup, find_packages
-#from resourcealchemy.version import __version__
+#from resource_alchemy.version import __version__
 
 __version__ = '0.1.0'
 
@@ -26,7 +26,7 @@ tests_require = [
 ]
 
 setup(
-    name='resourcealchemy',
+    name='resource_alchemy',
     version=__version__,
     description='Easily create SqlAlchemy backed API endpoints and resources',
     long_description='''
@@ -63,7 +63,7 @@ Easily create SqlAlchemy backed API endpoints and resources
     entry_points={
         'console_scripts': [
             # add cli scripts here in this form:
-            # 'resourcealchemy=resourcealchemy.cli:main',
+            # 'resource_alchemy=resource_alchemy.cli:main',
         ],
     },
 )

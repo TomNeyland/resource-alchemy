@@ -1,7 +1,7 @@
 
 #!/usr/bin/env python# -*- coding: utf-8 -*-
 
-# This file is part of resourcealchemy.
+# This file is part of resource_alchemy.
 # https://github.com/TomNeyland/resource-alchemy
 
 # Licensed under the TBD license:
@@ -10,7 +10,7 @@
 
 from preggy import expect
 
-from resourcealchemy import Resource, Field
+from resource_alchemy import Resource, Field
 from tests.base import TestCase, TestObj
 
 
