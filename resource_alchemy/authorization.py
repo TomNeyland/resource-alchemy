@@ -1,13 +1,7 @@
 import math
 import re
 
-# from flask.ext.login import current_user
-
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-
-# from panel.core.database import session
-# from panel.common.models import Base
-# from panel.jsonrpc.exc import NotAuthorizedError
 
 from .search import search
 

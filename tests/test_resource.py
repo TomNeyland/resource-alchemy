@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python# -*- coding: utf-8 -*-
 
 # This file is part of resource_alchemy.
@@ -48,7 +47,7 @@ class ResourceTestCase(TestCase):
         return encoded_person1
 
 
-class JsonResourceTestCase(ResourceTestCase):
+class JSONResourceTestCase(ResourceTestCase):
 
     def test_json_decode_person1(self):
         pass
