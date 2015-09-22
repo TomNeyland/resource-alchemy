@@ -15,19 +15,19 @@ import resource_alchemy.resource as resource
 import resource_alchemy.authorization as authorization
 
 from resource_alchemy.fields import (Field,
-                                    Relationship,
-                                    ListRelationship,
-                                    FilteredListRelationship,
-                                    DateTimeField,
-                                    IntervalField)
+                                     Relationship,
+                                     ListRelationship,
+                                     FilteredListRelationship,
+                                     DateTimeField,
+                                     IntervalField)
 
 from resource_alchemy.resource import (Resource,
-									  JsonResource,
-									  ModelResource,
-                                      ApiResource)
+                                       JSONResource,
+                                       ModelResource,
+                                       ApiResource)
 
 
 from resource_alchemy.authorization import (FullAuthorization,
-                                           NoAuthorization,
-                                           ReadOnlyAuthorization,
-                                           PropertyAuthorization)
+                                            NoAuthorization,
+                                            ReadOnlyAuthorization,
+                                            PropertyAuthorization)

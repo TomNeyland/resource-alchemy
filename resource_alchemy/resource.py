@@ -1,17 +1,16 @@
 import math
 import re
 import ujson as json
-# from flask.ext.login import current_user
 
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 # from panel.core.database import session
 # from panel.common.models import Base
-# from panel.jsonrpc.exc import NotAuthorizedError
-
+from .exceptions import NotAuthorized
 from .search import search
 from .fields import Field, Relationship, ListRelationship
-from .authorization import NoAuthorization, FullAuthorization, ReadOnlyAuthorization, PropertyAuthorization
+from .authorization import (
+    NoAuthorization, FullAuthorization, ReadOnlyAuthorization, PropertyAuthorization)
 
 
 def convert_name(name):
@@ -133,7 +132,7 @@ class Resource(object):
         return schema
 
 
-class JsonResource(object):
+class JSONResource(object):
 
     @classmethod
     def json_encode(cls, obj, **options):
@@ -213,6 +212,7 @@ class ModelResource(object):
     @classmethod
     def to_dict(cls, obj_or_pk, **kwargs):
 
+        # TODO(will): Check to see if this is an object, an int or a string
         if not isinstance(obj_or_pk, Base):
             obj = cls.get_obj(obj_or_pk)
         else:
@@ -220,8 +220,7 @@ class ModelResource(object):
 
         if cls.meta.authorization:
             if not cls.meta.authorization.can_read(obj, **kwargs):
-                raise NotAuthorizedError('%s: %s Not authorized to read %s' %
-                                         (cls.meta.authorization, current_user, obj))
+                raise NotAuthorized('Not authorized to read object')
 
         result = {}
 
@@ -248,14 +247,14 @@ class ModelResource(object):
             obj = cls.query('get').get(obj_pks)
 
             if obj and not cls.meta.authorization.can_read(obj):
-                raise NotAuthorizedError('Not authorized to read object')
+                raise NotAuthorized('Not authorized to read object')
 
-        if obj == None:
+        if obj is None:
             if cls.meta.authorization.can_create(obj_data):
                 obj = Model()
                 created = True
             else:
-                raise NotAuthorizedError('Not authorized to create object')
+                raise NotAuthorized('Not authorized to create object')
 
         if created is True or cls.meta.authorization.can_update(obj):
             for key, field in cls._fields():
@@ -266,7 +265,7 @@ class ModelResource(object):
                     if field.authorization.can_update(obj, value, **obj_data):
                         field.to_obj(obj, value, **obj_data)
         elif not created:
-            raise NotAuthorizedError('Not authorized to edit object')
+            raise NotAuthorized('Not authorized to edit object')
 
         return obj
 
@@ -290,10 +289,8 @@ class ModelResource(object):
 
     @classmethod
     def search(cls, search_params={}, query=None):
-
-        result = search(session, cls.meta.model, search_params, query=query)
-#
-        return result
+        # TODO: what do we want to do here?
+        raise NotImplemented()
 
     @classmethod
     def query(cls, mode='search'):
@@ -378,21 +375,11 @@ class ApiResource(ModelResource):
 
         obj = cls.post_create(obj, obj_data)
 
-        session.add(obj)
-        # session.commit()
-#
-        cls.post_create_commit(obj)
-
         return cls.to_dict(obj)
 
     @classmethod
     def post_create(cls, obj, obj_data):
         return obj
-
-    @classmethod
-    def post_create_commit(cls, obj):
-        """Called after `obj` has been created and committed to the SQLAlchemy session."""
-        pass
 
     @classmethod
     def pre_update(cls, obj_data):
@@ -432,7 +419,8 @@ class ApiResource(ModelResource):
         result_count = search_result.count()
 
         page = search_params.get('page', 1)
-        results_per_page = search_params.get('results_per_page') or cls.meta.results_per_page
+        results_per_page = search_params.get(
+            'results_per_page') or cls.meta.results_per_page
         pages = int(math.ceil(float(result_count) / results_per_page))
 
         if search_params.get('single'):

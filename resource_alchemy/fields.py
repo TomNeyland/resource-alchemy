@@ -5,13 +5,12 @@ import datetime
 import dateutil.parser
 import time
 
+from .exceptions import NotAuthorized
+
 from sqlalchemy.ext.hybrid import hybrid_method
 from sqlalchemy.orm import (undefer, joinedload, subqueryload, joinedload_all,
                             subqueryload_all, dynamic_loader)
 
-# from flask.ext.login import current_user
-
-# from panel.jsonrpc.exc import NotAuthorizedError
 
 log = logging.getLogger(__name__)
 
@@ -40,38 +39,6 @@ class FullFieldAuthorization(object):
     @hybrid_method
     def can_update(self, obj, value, **obj_data):
         return True
-
-
-# class UserPasswordFieldAuthorization(ReadOnlyFieldAuthorization):
-
-#     @hybrid_method
-#     def can_update(self, obj, value, **obj_data):
-
-# limits this authorization to only
-# working for a field on the user model
-# of the currently logged in user
-#         if obj != current_user:
-#             return False
-
-#         confirmation_password = obj_data.get('confirmation_password', None)
-
-#         if confirmation_password != None and current_user.password == confirmation_password:
-#             return True
-#         else:
-#             raise NotAuthorizedError()
-
-
-# class AdminFieldAuthorization(object):
-#     """Restricts field updates only to organization admins."""
-
-#     @hybrid_method
-#     def can_read(self, obj, **kwargs):
-#         return current_user.organization_id == obj.organization_id
-
-#     @hybrid_method
-#     def can_update(self, obj, value, **kwargs):
-#         return (current_user.organization_id == obj.organization_id
-#                 and current_user.is_admin)
 
 
 class Field(object):
@@ -118,7 +85,7 @@ class Field(object):
                 log.debug('setting %s.%s = %s', obj, self.name, value)
                 return value
             else:
-                raise NotAuthorizedError("Not authorized to update '%s'" % self.name)
+                raise NotAuthorized("Not authorized to update '%s'" % self.name)
 
     def from_obj(self, obj, **kwargs):
         """Convert a Python object to something we can serialize to JSON."""
@@ -135,14 +102,14 @@ class DateTimeField(Field):
 
         value = super(DateTimeField, self).from_obj(obj, **kwargs)
 
-        if value != None:
+        if value is not None:
             value = value.isoformat()
 
         return value
 
     def to_obj(self, obj, value, **obj_data):
 
-        if value != None:
+        if value is not None:
             value = dateutil.parser.parse(value)
 
         return super(DateTimeField, self).to_obj(obj, value, **obj_data)
@@ -236,36 +203,6 @@ class ListRelationship(Field):
                             for value in values]
 
             setattr(obj, self.name, related_objs)
-
-
-class FilteredListRelationship(ListRelationship):
-
-    """This was created to allow users to view collectors for the Persona
-    survey which belongs to organization_id 0. Without this filter,
-    when loading a survey's collectors, all collectors for all organizations
-    would load. These collectors' auth strategies would run, which would fail
-    for all organization's but the user's. This would error the entire request.
-    """
-
-    def __init__(self, resource, list_filter=None, **kwargs):
-        self.list_filter = list_filter
-        super(FilteredListRelationship, self).__init__(resource, **kwargs)
-
-    def from_obj(self, obj, **kwargs):
-
-        if not self.authorization.can_read(obj, **kwargs):
-            return None
-
-        related_objs = getattr(obj, self.name, None)
-
-        if related_objs:
-            if self.list_filter:
-                related_objs = filter(self.list_filter, related_objs)
-
-            return [self.resource.to_dict(related_obj)
-                    for related_obj in related_objs]
-        else:
-            return []
 
 
 class FilteredListRelationship(ListRelationship):
