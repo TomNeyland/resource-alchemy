@@ -146,62 +146,6 @@ class JSONResource(object):
         return obj
 
 
-class CRUDResource(object):
-
-    __metaclass__ = ModelResourceMetaclass
-
-    class meta:
-        pass
-
-    # create
-    @classmethod
-    def create(cls, resource_data, **options):
-        pass
-
-    # read
-    @classmethod
-    def read(cls, resource_id, **options):
-        pass
-
-    # update
-    @classmethod
-    def update(cls, resource_data, **options):
-        pass
-
-    # delete
-    @classmethod
-    def delete(cls, resource_id, **options):
-        pass
-
-
-class RESTResource(object):
-
-    __metaclass__ = ModelResourceMetaclass
-
-    class meta:
-        pass
-
-    # create
-    @classmethod
-    def post(cls, resource_data, **options):
-        pass
-
-    # read
-    @classmethod
-    def get(cls, resource_id, **options):
-        pass
-
-    # update
-    @classmethod
-    def patch(cls, resource_data, **options):
-        pass
-
-    # delete
-    @classmethod
-    def delete(cls, resource_id, **options):
-        pass
-
-
 class ModelResource(object):
 
     __metaclass__ = ModelResourceMetaclass
@@ -213,7 +157,7 @@ class ModelResource(object):
     def to_dict(cls, obj_or_pk, **kwargs):
 
         # TODO(will): Check to see if this is an object, an int or a string
-        if not isinstance(obj_or_pk, Base):
+        if not isinstance(obj_or_pk, cls.meta.model):
             obj = cls.get_obj(obj_or_pk)
         else:
             obj = obj_or_pk
@@ -414,8 +358,8 @@ class ApiResource(ModelResource):
     @classmethod
     def search(cls, search_params={}):
 
-        search_result = super(ApiResource, cls).search(search_params=search_params,
-                                                       query=cls.query('search'))
+        search_result = search(None, cls.meta.model, search_params,
+                               query=cls.query('search'))
         result_count = search_result.count()
 
         page = search_params.get('page', 1)
@@ -430,7 +374,8 @@ class ApiResource(ModelResource):
             slice_start = (page - 1) * results_per_page
             slice_end = slice_start + results_per_page
 
-            result = [cls.to_dict(obj) for obj in search_result[slice_start:slice_end]]
+            result = [cls.to_dict(obj)
+                      for obj in search_result[slice_start:slice_end]]
 
             response = {
                 'num_results': result_count,
@@ -440,3 +385,15 @@ class ApiResource(ModelResource):
             }
 
         return response
+
+    @classmethod
+    def register_resource(cls, app):
+
+        name_suffix = cls.meta.name or convert_name(cls.meta.model.__name__)
+
+        for func_name in ('get', 'update', 'search', 'create', 'delete'):
+            name = '/%s/%s' % (name_suffix, func_name)
+            func = getattr(cls, func_name)
+            register_func = app.route(name)
+            register_func(func)
+            print 'registered', name
