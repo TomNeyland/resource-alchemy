@@ -76,9 +76,9 @@ class Field(object):
 
     def __init__(self, name=None, key=None, read_only=True, required=False, authorization=None, **kwargs):
         self.name = name
+        self.read_only = read_only
         self.required = required
         self.options = kwargs
-        self.read_only = read_only
 
         if read_only:
             self.authorization = ReadOnlyFieldAuthorization
