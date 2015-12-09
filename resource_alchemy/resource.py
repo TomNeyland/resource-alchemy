@@ -2,15 +2,11 @@ import math
 import re
 import ujson as json
 
-from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
+from sqlalchemy.ext.hybrid import hybrid_property
 
-# from panel.core.database import session
-# from panel.common.models import Base
 from .exceptions import NotAuthorized
-from .search import search
 from .fields import Field, Relationship, ListRelationship
-from .authorization import (
-    NoAuthorization, FullAuthorization, ReadOnlyAuthorization, PropertyAuthorization)
+from .authorization import NoAuthorization
 
 
 def convert_name(name):
@@ -74,7 +70,6 @@ class ModelResourceMetaclass(type):
 
                 if model:
                     value.model = model
-
 
 
 class Resource(object):
