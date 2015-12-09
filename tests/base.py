@@ -42,6 +42,7 @@ class UserResource(Resource):
 
     class meta:
         model = User
+        description = 'User resource'
 
 
 class TestCase(PythonTestCase):
