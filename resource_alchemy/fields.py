@@ -1,18 +1,49 @@
 import logging
-import pytz
 
 import datetime
 import dateutil.parser
-import time
 
 from .exceptions import NotAuthorized
 
 from sqlalchemy.ext.hybrid import hybrid_method
-from sqlalchemy.orm import (undefer, joinedload, subqueryload, joinedload_all,
-                            subqueryload_all, dynamic_loader)
 
 
 log = logging.getLogger(__name__)
+
+
+def get_json_schema_type(column):
+    field_type = None
+    python_type = getattr(column.type, 'python_type')
+
+    if python_type is list:
+        field_type = 'array'
+    elif python_type is bool:
+        field_type = 'boolean'
+    elif python_type is int:
+        field_type = 'integer'
+    elif python_type is float:
+        field_type = 'number'
+    elif python_type is dict:
+        field_type = 'object'
+    elif python_type is str:
+        field_type = 'string'
+    elif python_type is None:
+        pass
+    else:
+        raise Exception('Unknown type %s' % python_type)
+
+    schema = {
+        'type': field_type,
+    }
+
+    if column.nullable is True:
+        schema = {
+            'anyOf': [schema, {
+                'type': 'null'
+            }]
+        }
+
+    return schema
 
 
 def isalambda(v):
@@ -43,19 +74,17 @@ class FullFieldAuthorization(object):
 
 class Field(object):
 
-    def __init__(self, name=None, key=None, read_only=True, required=False, authorization=None, json_type='string'):
-        if name:
-            assert isinstance(name, basestring), "Field name must be a string"
-
+    def __init__(self, name=None, key=None, read_only=True, required=False, authorization=None, **kwargs):
         self.name = name
+        self.read_only = read_only
         self.required = required
-        self.json_type = json_type
+        self.options = kwargs
 
-        if authorization:
-            self.authorization = authorization
-        elif read_only:
+        if read_only:
             self.authorization = ReadOnlyFieldAuthorization
-        elif not read_only:
+        elif authorization:
+            self.authorization = authorization
+        else:
             self.authorization = FullFieldAuthorization
 
     def encode(self, *args, **kwargs):
@@ -65,13 +94,18 @@ class Field(object):
         return self.to_obj(*args, **kwargs)
 
     def json_schema(self):
+        field_attribute = getattr(self.model, self.name)
+        field_column = field_attribute.property.columns[0]
 
-        schema = {
-            'type': self.json_type,
-            'options': {
-                'alchemyType': self.__class__.__name__
-            }
-        }
+        schema = {}
+
+        schema.update(get_json_schema_type(field_column))
+
+        if 'description' in self.options:
+            schema['description'] = self.options['description']
+
+        if self.read_only:
+            schema['readonly'] = self.read_only
 
         return schema
 

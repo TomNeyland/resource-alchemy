@@ -2,15 +2,11 @@ import math
 import re
 import ujson as json
 
-from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
+from sqlalchemy.ext.hybrid import hybrid_property
 
-# from panel.core.database import session
-# from panel.common.models import Base
 from .exceptions import NotAuthorized
-from .search import search
 from .fields import Field, Relationship, ListRelationship
-from .authorization import (
-    NoAuthorization, FullAuthorization, ReadOnlyAuthorization, PropertyAuthorization)
+from .authorization import NoAuthorization
 
 
 def convert_name(name):
@@ -47,8 +43,9 @@ class ModelResourceMetaclass(type):
 
         resource_name = getattr(meta_cls, 'name', None)
 
+        model = getattr(meta_cls, 'model', None)
+
         if resource_name is None:
-            model = getattr(meta_cls, 'model', None)
             if model:
                 resource_name = convert_name(model.__name__)
             else:
@@ -59,15 +56,20 @@ class ModelResourceMetaclass(type):
         attrs['meta'] = meta_cls
 
         for attr, value in attrs.iteritems():
-
             if isinstance(value, Field):
                 value.key = attr
                 value.name = value.name or attr
+
+                if model:
+                    value.model = model
             elif isinstance(value, type) and issubclass(value, Field):
                 field = value()
                 field.key = attr
                 field.name = attr
                 attrs[attr] = field
+
+                if model:
+                    value.model = model
 
 
 class Resource(object):
@@ -118,16 +120,25 @@ class Resource(object):
     def json_schema(cls):
 
         schema = {
+            'id': cls.meta.name,
+            '$schema': 'http://json-schema.org/draft-04/schema#',
             'type': 'object',
-            'properties': {},
-            'options': {
-                'alchemyResource': cls.__name__
+            'items': {
+                'properties': {},
             }
         }
 
+        if hasattr(cls.meta, 'description'):
+            schema['description'] = cls.meta.description
+
         for attr, field in cls.fields():
             field_schema = field.json_schema()
-            schema['properties'][attr] = field_schema
+            schema['items']['properties'][attr] = field_schema
+
+        required_fields = [field.key for attr, field in cls.fields() if field.required is True]
+
+        if required_fields:
+            schema['required'] = required_fields
 
         return schema
 
