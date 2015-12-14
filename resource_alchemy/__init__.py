@@ -15,20 +15,20 @@ import resource
 import authorization
 
 from .fields import (Field,
-                                     Relationship,
-                                     ListRelationship,
-                                     FilteredListRelationship,
-                                     DateTimeField,
-                                     IntervalField)
+                     Relationship,
+                     ListRelationship,
+                     FilteredListRelationship,
+                     DateTimeField,
+                     IntervalField)
 
 from .resource import (Resource,
-                                       JSONResource,
-                                       ModelResource,
-                                       ApiResource,
-                                       RestResource)
+                       JSONResource,
+                       ModelResource,
+                       ApiResource,
+                       RestResource)
 
 
 from .authorization import (FullAuthorization,
-                                            NoAuthorization,
-                                            ReadOnlyAuthorization,
-                                            PropertyAuthorization)
+                            NoAuthorization,
+                            ReadOnlyAuthorization,
+                            PropertyAuthorization)
