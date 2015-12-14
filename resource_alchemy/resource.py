@@ -165,7 +165,7 @@ class Resource(object):
             field_schema = field.json_schema()
             schema['items']['properties'][attr] = field_schema
 
-        required_fields = [field.key for attr, field in cls.fields() if field.required is True]
+        required_fields = [field.key for attr, field in cls._fields() if field.required is True]
 
         if required_fields:
             schema['required'] = required_fields
