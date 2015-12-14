@@ -1,9 +1,8 @@
 import math
 import re
 import ujson as json
-
-from sqlalchemy.ext.hybrid import hybrid_property
-
+from flask.views import MethodView, MethodViewType, View
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from .exceptions import NotAuthorized
 from .fields import Field, Relationship, ListRelationship
 from .authorization import NoAuthorization
@@ -14,18 +13,48 @@ def convert_name(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
+class ModelTransformer(object):
+
+    @classmethod
+    def serialize_one(cls, resource, obj, **kwargs):
+
+        if resource.meta.authorization:
+            if not resource.meta.authorization.can_read(obj, **kwargs):
+                raise NotAuthorized('Not authorized to read object')
+
+        result = {}
+
+        for key, field in resource._fields():
+            result[key] = field.from_obj(obj)
+
+        return result
+
+    @classmethod
+    def serialize_list(cls, resource, objs, **kwargs):
+        return [cls.serialize_one(resource, obj, **kwargs) for obj in objs]
+
+    @classmethod
+    def deserialize_one(cls, resource, obj, **kwargs):
+        pass
+
+    @classmethod
+    def deserialize_list(cls, resource, objw, **kwargs):
+        return [deserialize_one(resource, obj, **kwargs) for obj in objs]
+
+
 class ModelResourceMetaclass(type):
 
-    authorization = NoAuthorization
+    authorization = FullAuthorization
     query_options = ()
     method_options = {}
     results_per_page = 100
+    transformers = [ModelTransformer]
+
 
     def __new__(cls, name, bases, attrs):
 
         cls.setup_resource(name, bases, attrs)
-
-        new_cls = type.__new__(cls, name, bases, attrs)
+        new_cls = super(ModelResourceMetaclass, cls).__new__(cls, name, bases, attrs)
 
         return new_cls
 
@@ -76,19 +105,19 @@ class Resource(object):
 
     __metaclass__ = ModelResourceMetaclass
 
-    @classmethod
-    def fields(cls):
+    @hybrid_method
+    def _fields(cls):
         for attr, value in cls.__dict__.iteritems():
             if isinstance(value, (Field)) and not isinstance(value, (Relationship, ListRelationship)):
                 yield (attr, value)
 
-    @classmethod
-    def relationships(cls):
+    @hybrid_method
+    def _relationships(cls):
         for attr, value in cls.__dict__.iteritems():
             if isinstance(value, (Relationship, ListRelationship)):
                 yield (attr, value)
 
-    @classmethod
+    @hybrid_method
     def encode(cls, obj, **options):
 
         result = {}
@@ -101,7 +130,7 @@ class Resource(object):
 
         return result
 
-    @classmethod
+    @hybrid_method
     def decode(cls, obj, obj_data, **options):
 
         for attr, field in cls.fields():
@@ -116,7 +145,7 @@ class Resource(object):
 
         return obj
 
-    @classmethod
+    @hybrid_method
     def json_schema(cls):
 
         schema = {
@@ -131,7 +160,8 @@ class Resource(object):
         if hasattr(cls.meta, 'description'):
             schema['description'] = cls.meta.description
 
-        for attr, field in cls.fields():
+        for attr, field in cls._fields():
+
             field_schema = field.json_schema()
             schema['items']['properties'][attr] = field_schema
 
@@ -145,13 +175,13 @@ class Resource(object):
 
 class JSONResource(object):
 
-    @classmethod
+    @hybrid_method
     def json_encode(cls, obj, **options):
         obj_data = cls.encode(obj, **options)
         obj_json = json.dumps(obj_data)
         return obj_json
 
-    @classmethod
+    @hybrid_method
     def json_decode(cls, obj, obj_data, **options):
         obj = cls.decode(obj, obj_data, **options)
         return obj
@@ -164,7 +194,7 @@ class ModelResource(object):
     class meta:
         pass
 
-    @classmethod
+    @hybrid_method
     def to_dict(cls, obj_or_pk, **kwargs):
 
         # TODO(will): Check to see if this is an object, an int or a string
@@ -184,7 +214,7 @@ class ModelResource(object):
 
         return result
 
-    @classmethod
+    @hybrid_method
     def to_obj(cls, obj_data):
 
         Model = cls.meta.model
@@ -224,11 +254,11 @@ class ModelResource(object):
 
         return obj
 
-    @classmethod
+    @hybrid_method
     def update_obj(cls, obj_data):
         return
 
-    @classmethod
+    @hybrid_method
     def get_obj(cls, obj_pk):
 
         if not isinstance(obj_pk, tuple):
@@ -242,12 +272,12 @@ class ModelResource(object):
 
         return obj
 
-    @classmethod
+    @hybrid_method
     def search(cls, search_params={}, query=None):
         # TODO: what do we want to do here?
         raise NotImplemented()
 
-    @classmethod
+    @hybrid_method
     def query(cls, mode='search'):
 
         Model = cls.meta.model
@@ -288,7 +318,7 @@ class ModelResource(object):
     def delete_query(cls):
         return cls.base_query
 
-    @classmethod
+    @hybrid_method
     def _fields(cls):
         for attr, value in cls.__dict__.iteritems():
             if isinstance(value, Field):
@@ -297,11 +327,11 @@ class ModelResource(object):
 
 class ApiResource(ModelResource):
 
-    @classmethod
+    @hybrid_method
     def pre_get(cls, pk):
         return pk
 
-    @classmethod
+    @hybrid_method
     def get(cls, pk):
 
         pk = cls.pre_get(pk)
@@ -313,15 +343,15 @@ class ApiResource(ModelResource):
 
         return obj_data
 
-    @classmethod
+    @hybrid_method
     def post_get(cls, obj_data, obj, pk):
         return obj_data
 
-    @classmethod
+    @hybrid_method
     def pre_create(cls, obj_data):
         return obj_data
 
-    @classmethod
+    @hybrid_method
     def create(cls, obj_data):
 
         obj_data = cls.pre_create(obj_data)
@@ -332,15 +362,15 @@ class ApiResource(ModelResource):
 
         return cls.to_dict(obj)
 
-    @classmethod
+    @hybrid_method
     def post_create(cls, obj, obj_data):
         return obj
 
-    @classmethod
+    @hybrid_method
     def pre_update(cls, obj_data):
         return obj_data
 
-    @classmethod
+    @hybrid_method
     def update(cls, obj_data):
 
         obj_data = cls.pre_update(obj_data)
@@ -358,15 +388,15 @@ class ApiResource(ModelResource):
 
         return cls.to_dict(obj)
 
-    @classmethod
+    @hybrid_method
     def post_update(cls, obj, obj_data):
         return obj
 
-    @classmethod
+    @hybrid_method
     def delete(cls, pk):
         raise NotImplemented("Delete does not have a default implementation")
 
-    @classmethod
+    @hybrid_method
     def search(cls, search_params={}):
 
         search_result = search(None, cls.meta.model, search_params,
@@ -397,10 +427,18 @@ class ApiResource(ModelResource):
 
         return response
 
-    @classmethod
+    @hybrid_method
     def register_resource(cls, app):
 
         name_suffix = cls.meta.name or convert_name(cls.meta.model.__name__)
+
+        @app.route('/%s/' % name_suffix, methods=['GET', 'POST'])
+        def base_handler():
+
+            if request.method is 'GET':
+                return cls.search()
+            elif request.method is 'POST':
+                return cls.create()
 
         for func_name in ('get', 'update', 'search', 'create', 'delete'):
             name = '/%s/%s' % (name_suffix, func_name)
@@ -408,3 +446,111 @@ class ApiResource(ModelResource):
             register_func = app.route(name)
             register_func(func)
             print 'registered', name
+
+
+class RestResourceMetaclass(ModelResourceMetaclass, MethodViewType, View):
+    pass
+
+
+class RestResource(MethodView, Resource):
+
+    __metaclass__ = RestResourceMetaclass
+
+    class meta:
+        pass
+
+
+    @hybrid_method
+    def get(self, pk=None):
+        if pk is None:
+            # return a list of users
+            return self.get_list()
+        else:
+            return self.get_one(pk)
+
+    @hybrid_method
+    def post(self):
+        # create a new user
+        pass
+
+    @hybrid_method
+    def delete(self, pk):
+        # delete a single user
+        pass
+
+    @hybrid_method
+    def put(self, pk):
+        # update a single user
+        pass
+
+    @hybrid_method
+    def get_one(cls, pk, **kwargs):
+
+        if not isinstance(pk, tuple):
+            pk = (pk,)
+
+        query = cls.get_query
+
+        obj = query.get(pk)
+
+        obj_data = cls.apply_transformers(obj, 'serialize_one', **kwargs)
+
+        return obj_data
+
+    @hybrid_method
+    def get_list(cls, **kwargs):
+        objs = cls.search_query
+        return cls.apply_transformers(objs, 'serialize_list', **kwargs)
+
+    @hybrid_property
+    def base_query(cls):
+        return cls.meta.model.query
+
+    @hybrid_property
+    def get_query(cls):
+        return cls.base_query
+
+    @hybrid_property
+    def search_query(cls):
+        return cls.base_query
+
+    @hybrid_property
+    def update_query(cls):
+        return cls.base_query
+
+    @hybrid_property
+    def delete_query(cls):
+        return cls.base_query
+
+    @hybrid_method
+    def apply_transformers(cls, obj, transform_func, **kwargs):
+        for transformer in cls.meta.transformers:
+            if hasattr(transformer, transform_func):
+                transform = getattr(transformer, transform_func)
+                obj = transform(cls, obj, **kwargs)
+        return obj
+
+    @hybrid_method
+    def register_api(cls, pk='id', pk_type='int'):
+
+        resource_name = cls.meta.name
+        resource_url = '/%s/' % resource_name
+
+        view_func = cls.as_view(resource_name)
+
+        app.add_url_rule(resource_url,
+                         defaults={pk: None},
+                         view_func=view_func,
+                         methods=['GET', ])
+
+        app.add_url_rule(resource_url,
+                         view_func=view_func,
+                         methods=['POST', ])
+
+        app.add_url_rule('%s<pk>' % (resource_url),
+                         view_func=view_func,
+                         methods=['GET', 'PUT', 'DELETE'])
+
+        return view_func
+
+        # register_api(UserAPI, 'user_api', '/users/', pk='user_id')

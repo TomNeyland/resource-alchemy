@@ -24,7 +24,8 @@ from resource_alchemy.fields import (Field,
 from resource_alchemy.resource import (Resource,
                                        JSONResource,
                                        ModelResource,
-                                       ApiResource)
+                                       ApiResource,
+                                       RestResource)
 
 
 from resource_alchemy.authorization import (FullAuthorization,
