@@ -10,25 +10,25 @@
 
 from resource_alchemy.version import __version__  # NOQA
 
-import resource_alchemy.fields as fields
-import resource_alchemy.resource as resource
-import resource_alchemy.authorization as authorization
+import fields
+import resource
+import authorization
 
-from resource_alchemy.fields import (Field,
+from .fields import (Field,
                                      Relationship,
                                      ListRelationship,
                                      FilteredListRelationship,
                                      DateTimeField,
                                      IntervalField)
 
-from resource_alchemy.resource import (Resource,
+from .resource import (Resource,
                                        JSONResource,
                                        ModelResource,
                                        ApiResource,
                                        RestResource)
 
 
-from resource_alchemy.authorization import (FullAuthorization,
+from .authorization import (FullAuthorization,
                                             NoAuthorization,
                                             ReadOnlyAuthorization,
                                             PropertyAuthorization)

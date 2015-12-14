@@ -5,7 +5,7 @@ from flask.views import MethodView, MethodViewType, View
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from .exceptions import NotAuthorized
 from .fields import Field, Relationship, ListRelationship
-from .authorization import NoAuthorization
+from .authorization import NoAuthorization, FullAuthorization
 
 
 def convert_name(name):
