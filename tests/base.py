@@ -7,14 +7,24 @@
 # Licensed under the TBD license:
 # http://www.opensource.org/licenses/TBD-license
 # Copyright (c) 2015, Tom Neyland <tcneyland+github@gmail.com>
-
 from unittest import TestCase as PythonTestCase
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Boolean, Text, Integer, Float
 
 from resource_alchemy import Resource, Field
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, scoped_session
+from contextlib import contextmanager
+
+# an Engine, which the Session will use for connection
+# resources
+engine = create_engine('sqlite://')
+
+# create a configured "Session" class
+Session = scoped_session(sessionmaker(bind=engine))
 
 Base = declarative_base()
+Base.query = Session.query_property()
 
 
 class User(Base):
@@ -46,10 +56,32 @@ class UserResource(Resource):
 
 
 class TestCase(PythonTestCase):
-    pass
+
+
+    def setUp(self):
+        with session_scope():
+            Base.metadata.create_all(engine)
+
+    def tearDown(self):
+        with session_scope():
+            Base.metadata.drop_all(engine)
 
 
 class TestObj(object):
 
     def __init__(self, *args, **kwargs):
         self.__dict__.update(kwargs)
+
+
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    session = Session()
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()

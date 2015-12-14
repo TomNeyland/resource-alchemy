@@ -10,65 +10,17 @@
 from preggy import expect
 
 from resource_alchemy import Resource, Field
-from tests.base import TestCase, TestObj, UserResource
+from resource_alchemy.resource import RestResource
+from tests.base import TestCase, TestObj, UserResource, User, session_scope
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean
-
-Base = declarative_base()
-
-
-class User(Base):
-
-    __tablename__ = 'users'
-
-    email = Column(String(255), primary_key=True)
-    employee_id = Column(Integer, ForeignKey('employees.id', deferrable=True, initially='DEFERRED'))
-    google_token = Column(Text)
-    active = Column(Boolean(), nullable=False, default=True)
-
-    # employee = db.relationship('Employee')
-
-    def get_id(self):
-        return self.email
-
-
-# class ResourceTestCase(TestCase):
-
-#     class Person(TestObj):
-#         pass
-
-#     class PersonResource(Resource):
-#         first_name = Field(read_only=False)
-#         last_name = Field(read_only=False)
-#         nick = Field('nickname', read_only=False)
-
-#     def setUp(self):
-#         self.person1_raw = dict(first_name='Ferdinand', last_name='Magellen', nick='Ferd')
-
-#     def test_decode_person1(self):
-
-#         person1 = ResourceTestCase.Person()
-#         person1 = ResourceTestCase.PersonResource.decode(person1, self.person1_raw)
-
-#         expect(person1.first_name).to_equal('Ferdinand')
-#         expect(person1.last_name).to_equal('Magellen')
-#         expect(person1.nickname).to_equal('Ferd')
-
-#         return person1
-
-    # def test_json_encode_person1(self):
-#         person1 = self.test_decode_person1()
-
-#         encoded_person1 = ResourceTestCase.PersonResource.encode(person1)
-#         expect(encoded_person1).to_be_like(self.person1_raw)
-
-#         return encoded_person1
 
 
 class JSONSchemaTestCase(TestCase):
 
     def setUp(self):
+        super(JSONSchemaTestCase, self).setUp()
         self.json_schema = UserResource.json_schema()
 
     def test_schema_type(self):
@@ -92,18 +44,40 @@ class JSONSchemaTestCase(TestCase):
         expect(self.json_schema['description']).to_equal('User resource')
 
 
-# class JSONResourceTestCase(ResourceTestCase):
+class RestUserResource(RestResource):
 
-#     def test_json_decode_person1(self):
-#         pass
+        user_id = Field()
+        first_name = Field()
+        last_name = Field()
 
-#     def test_json_encode_person1(self):
-#         pass
+        class meta:
+            model = User
 
 
-# class RestResourceTestCase(TestCase):
+class RestUserResourceTestCase(TestCase):
 
-#      class PersonResource(Resource):
-#         first_name = Field(read_only=False)
-#         last_name = Field(read_only=False)
-#         nick = Field('nickname', read_only=False)
+    def setUp(self):
+        super(RestUserResourceTestCase, self).setUp()
+
+        with session_scope() as session:
+            user = User(user_id=1, first_name='Test', last_name='User', age=18, savings=100.0)
+            user2 = User(user_id=2, first_name='Test', last_name='User2', age=19, savings=200.0)
+            session.add(user)
+            session.add(user2)
+            session.commit()
+
+    def test_resource_get_one(self):
+
+        user = RestUserResource.get_one(1)
+
+        expect(user['user_id']).to_equal(1)
+        expect(user['first_name']).to_equal('Test')
+        expect(user['last_name']).to_equal('User')
+
+    def test_resource_get_list(self):
+        users = RestUserResource.get_list()
+
+        expect(len(users)).to_equal(2)
+
+        expect(users[0]).to_equal(dict(user_id=1, first_name='Test', last_name='User'))
+        expect(users[1]).to_equal(dict(user_id=2, first_name='Test', last_name='User2'))
