@@ -11,49 +11,59 @@ from preggy import expect
 
 from resource_alchemy import Resource, Field
 from tests.base import TestCase, TestObj, UserResource
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean
+
+Base = declarative_base()
 
 
-class ResourceTestCase(TestCase):
+class User(Base):
 
-    class Person(TestObj):
-        pass
+    __tablename__ = 'users'
 
-    class PersonResource(Resource):
-        first_name = Field(read_only=False)
-        last_name = Field(read_only=False)
-        nick = Field('nickname', read_only=False)
+    email = Column(String(255), primary_key=True)
+    employee_id = Column(Integer, ForeignKey('employees.id', deferrable=True, initially='DEFERRED'))
+    google_token = Column(Text)
+    active = Column(Boolean(), nullable=False, default=True)
 
-    def setUp(self):
+    # employee = db.relationship('Employee')
 
-        self.person1_raw = dict(first_name='Ferdinand', last_name='Magellen', nick='Ferd')
-
-    def test_decode_person1(self):
-
-        person1 = ResourceTestCase.Person()
-        person1 = ResourceTestCase.PersonResource.decode(person1, self.person1_raw)
-
-        expect(person1.first_name).to_equal('Ferdinand')
-        expect(person1.last_name).to_equal('Magellen')
-        expect(person1.nickname).to_equal('Ferd')
-
-        return person1
-
-    def test_encode_person1(self):
-        person1 = self.test_decode_person1()
-
-        encoded_person1 = ResourceTestCase.PersonResource.encode(person1)
-        expect(encoded_person1).to_be_like(self.person1_raw)
-
-        return encoded_person1
+    def get_id(self):
+        return self.email
 
 
-class JSONResourceTestCase(ResourceTestCase):
+# class ResourceTestCase(TestCase):
 
-    def test_json_decode_person1(self):
-        pass
+#     class Person(TestObj):
+#         pass
 
-    def test_json_encode_person1(self):
-        pass
+#     class PersonResource(Resource):
+#         first_name = Field(read_only=False)
+#         last_name = Field(read_only=False)
+#         nick = Field('nickname', read_only=False)
+
+#     def setUp(self):
+#         self.person1_raw = dict(first_name='Ferdinand', last_name='Magellen', nick='Ferd')
+
+#     def test_decode_person1(self):
+
+#         person1 = ResourceTestCase.Person()
+#         person1 = ResourceTestCase.PersonResource.decode(person1, self.person1_raw)
+
+#         expect(person1.first_name).to_equal('Ferdinand')
+#         expect(person1.last_name).to_equal('Magellen')
+#         expect(person1.nickname).to_equal('Ferd')
+
+#         return person1
+
+    # def test_json_encode_person1(self):
+#         person1 = self.test_decode_person1()
+
+#         encoded_person1 = ResourceTestCase.PersonResource.encode(person1)
+#         expect(encoded_person1).to_be_like(self.person1_raw)
+
+#         return encoded_person1
 
 
 class JSONSchemaTestCase(TestCase):
@@ -80,3 +90,20 @@ class JSONSchemaTestCase(TestCase):
 
     def test_description(self):
         expect(self.json_schema['description']).to_equal('User resource')
+
+
+# class JSONResourceTestCase(ResourceTestCase):
+
+#     def test_json_decode_person1(self):
+#         pass
+
+#     def test_json_encode_person1(self):
+#         pass
+
+
+# class RestResourceTestCase(TestCase):
+
+#      class PersonResource(Resource):
+#         first_name = Field(read_only=False)
+#         last_name = Field(read_only=False)
+#         nick = Field('nickname', read_only=False)
