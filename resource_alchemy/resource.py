@@ -1,6 +1,7 @@
 import math
 import re
 import ujson as json
+from flask import jsonify
 from flask.views import MethodView, MethodViewType, View
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from .exceptions import NotAuthorized
@@ -23,7 +24,6 @@ class ModelTransformer(object):
                 raise NotAuthorized('Not authorized to read object')
 
         result = {}
-
         for key, field in resource._fields():
             result[key] = field.from_obj(obj)
 
@@ -105,19 +105,19 @@ class Resource(object):
 
     __metaclass__ = ModelResourceMetaclass
 
-    @hybrid_method
+    @classmethod
     def _fields(cls):
         for attr, value in cls.__dict__.iteritems():
             if isinstance(value, (Field)) and not isinstance(value, (Relationship, ListRelationship)):
                 yield (attr, value)
 
-    @hybrid_method
+    @classmethod
     def _relationships(cls):
         for attr, value in cls.__dict__.iteritems():
             if isinstance(value, (Relationship, ListRelationship)):
                 yield (attr, value)
 
-    @hybrid_method
+    @classmethod
     def encode(cls, obj, **options):
 
         result = {}
@@ -130,7 +130,7 @@ class Resource(object):
 
         return result
 
-    @hybrid_method
+    @classmethod
     def decode(cls, obj, obj_data, **options):
 
         for attr, field in cls.fields():
@@ -145,7 +145,7 @@ class Resource(object):
 
         return obj
 
-    @hybrid_method
+    @classmethod
     def json_schema(cls):
 
         schema = {
@@ -175,13 +175,13 @@ class Resource(object):
 
 class JSONResource(object):
 
-    @hybrid_method
+    @classmethod
     def json_encode(cls, obj, **options):
         obj_data = cls.encode(obj, **options)
         obj_json = json.dumps(obj_data)
         return obj_json
 
-    @hybrid_method
+    @classmethod
     def json_decode(cls, obj, obj_data, **options):
         obj = cls.decode(obj, obj_data, **options)
         return obj
@@ -445,7 +445,6 @@ class ApiResource(ModelResource):
             func = getattr(cls, func_name)
             register_func = app.route(name)
             register_func(func)
-            print 'registered', name
 
 
 class RestResourceMetaclass(ModelResourceMetaclass, MethodViewType, View):
@@ -464,9 +463,12 @@ class RestResource(MethodView, Resource):
     def get(self, pk=None):
         if pk is None:
             # return a list of users
-            return self.get_list()
+            result = dict(objects=self.get_list())
         else:
-            return self.get_one(pk)
+            pk = int(pk)
+            result = self.get_one(pk)
+
+        return jsonify(result)
 
     @hybrid_method
     def post(self):
@@ -490,7 +492,6 @@ class RestResource(MethodView, Resource):
             pk = (pk,)
 
         query = cls.get_query
-
         obj = query.get(pk)
 
         obj_data = cls.apply_transformers(obj, 'serialize_one', **kwargs)
@@ -531,7 +532,7 @@ class RestResource(MethodView, Resource):
         return obj
 
     @hybrid_method
-    def register_api(cls, pk='id', pk_type='int'):
+    def register_api(cls, app, pk='id', pk_type='int'):
 
         resource_name = cls.meta.name
         resource_url = '/%s/' % resource_name
@@ -539,7 +540,6 @@ class RestResource(MethodView, Resource):
         view_func = cls.as_view(resource_name)
 
         app.add_url_rule(resource_url,
-                         defaults={pk: None},
                          view_func=view_func,
                          methods=['GET', ])
 
