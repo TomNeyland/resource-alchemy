@@ -55,7 +55,8 @@ Easily create SqlAlchemy backed API endpoints and resources
         # remember to use 'package-name>=x.y.z,<x.y+1.0' notation (this way you get bugfixes)
         'sqlalchemy>=1.0',
         'python-dateutil>=2.4.2',
-        'ujson>=1.3'
+        'ujson>=1.3',
+        'flask'
     ],
     extras_require={
         'tests': tests_require,
