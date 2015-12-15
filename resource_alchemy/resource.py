@@ -14,6 +14,30 @@ def convert_name(name):
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 
+def resource_route(arg=None, **kwargs):
+
+    if hasattr(arg, '__call__'):
+        func = arg
+        route = '%s/' % func.func_name
+        relative = True
+        func._resource_route = {'route': route, 'relative': relative}
+        func = classmethod(func)
+        return func
+    else:
+        def make_route(func):
+            if arg and arg.startswith('/'):
+                relative = False
+            else:
+                relative = True
+            func._resource_route = {'route': arg or func.func_name, 'relative': relative}
+            func._resource_route.update(kwargs)
+            func = classmethod(func)
+            return func
+        return make_route
+
+
+
+
 class ModelTransformer(object):
 
     @classmethod
@@ -85,6 +109,7 @@ class ModelResourceMetaclass(type):
         attrs['meta'] = meta_cls
 
         for attr, value in attrs.iteritems():
+
             if isinstance(value, Field):
                 value.key = attr
                 value.name = value.name or attr
@@ -110,6 +135,22 @@ class Resource(object):
         for attr, value in cls.__dict__.iteritems():
             if isinstance(value, (Field)) and not isinstance(value, (Relationship, ListRelationship)):
                 yield (attr, value)
+
+    @classmethod
+    def _extra_routes(cls):
+        for attr, value in cls.__dict__.iteritems():
+            if hasattr(value, '__func__') and hasattr(value.__func__, '_resource_route'):
+                func = getattr(cls, attr)
+                options = dict(**value.__func__._resource_route)
+                options['view_func'] = func
+
+                relative = options.pop('relative')
+                if relative:
+                    resource_name = cls.meta.name
+                    resource_url = '/%s/' % resource_name
+                    options['route'] = '%s%s/' % (resource_url, options['route'])
+
+                yield options
 
     @classmethod
     def _relationships(cls):
@@ -170,7 +211,7 @@ class Resource(object):
         if required_fields:
             schema['required'] = required_fields
 
-        return schema
+        return jsonify(schema)
 
 
 class JSONResource(object):
@@ -550,6 +591,11 @@ class RestResource(MethodView, Resource):
         app.add_url_rule('%s<pk>' % (resource_url),
                          view_func=view_func,
                          methods=['GET', 'PUT', 'DELETE'])
+
+        cls.json_schema = app.route('%sschema/' % resource_url)(cls.json_schema)
+
+        for extra_route in cls._extra_routes():
+            app.add_url_rule(**extra_route)
 
         return view_func
 

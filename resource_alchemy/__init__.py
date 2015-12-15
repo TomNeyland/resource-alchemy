@@ -25,7 +25,8 @@ from .resource import (Resource,
                        JSONResource,
                        ModelResource,
                        ApiResource,
-                       RestResource)
+                       RestResource,
+                       resource_route)
 
 
 from .authorization import (FullAuthorization,

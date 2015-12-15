@@ -1,6 +1,7 @@
 import logging
 
 import datetime
+from datetime import datetime, date
 import dateutil.parser
 
 from .exceptions import NotAuthorized
@@ -27,6 +28,8 @@ def get_json_schema_type(column):
         field_type = 'object'
     elif python_type is str:
         field_type = 'string'
+    elif python_type is date:
+        field_type = 'date'
     elif python_type is None:
         pass
     else:
