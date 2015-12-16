@@ -509,6 +509,9 @@ class RestResource(MethodView, Resource):
             pk = int(pk)
             result = self.get_one(pk)
 
+        if result is None:
+            return '', 404
+
         return jsonify(result)
 
     @hybrid_method
@@ -535,7 +538,10 @@ class RestResource(MethodView, Resource):
         query = cls.get_query
         obj = query.get(pk)
 
-        obj_data = cls.apply_transformers(obj, 'serialize_one', **kwargs)
+        if obj is not None:
+            obj_data = cls.apply_transformers(obj, 'serialize_one', **kwargs)
+        else:
+            obj_data = None
 
         return obj_data
 
@@ -563,6 +569,20 @@ class RestResource(MethodView, Resource):
     @hybrid_property
     def delete_query(cls):
         return cls.base_query
+
+    @hybrid_method
+    def serialize(cls, obj, **kwargs):
+        if isinstance(obj, (list, tuple, set)):
+            return cls.apply_transformers(obj, 'serialize_list', **kwargs)
+        else:
+            return cls.apply_transformers(obj, 'serialize_one')
+
+    @hybrid_method
+    def deserialize(cls, obj, **kwargs):
+        if isinstance(obj, (list, tuple, set)):
+            return self.apply_transformers(obj, 'serialize_list', **kwargs)
+        else:
+            return self.apply_transformers(obj, 'serialize_one')
 
     @hybrid_method
     def apply_transformers(cls, obj, transform_func, **kwargs):
