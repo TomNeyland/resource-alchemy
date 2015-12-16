@@ -595,7 +595,8 @@ class RestResource(MethodView, Resource):
         cls.json_schema = app.route('%sschema/' % resource_url)(cls.json_schema)
 
         for extra_route in cls._extra_routes():
-            app.add_url_rule(**extra_route)
+            route = extra_route.pop('route')
+            app.add_url_rule(route, **extra_route)
 
         return view_func
 
