@@ -29,11 +29,13 @@ def get_json_schema_type(column):
     elif python_type is str:
         field_type = 'string'
     elif python_type is date:
-        field_type = 'date'
+        field_type = 'date-time'
+    elif python_type is datetime:
+        field_type = 'date-time'
     elif python_type is None:
         pass
     else:
-        raise Exception('Unknown type %s' % python_type)
+        raise ValueError('Unknown type %s' % python_type)
 
     schema = {
         'type': field_type,
@@ -120,6 +122,7 @@ class Field(object):
         if value != current_value:
             if self.authorization.can_update(obj, value, **obj_data):
                 log.debug('setting %s.%s = %s', obj, self.name, value)
+                setattr(obj, self.name, value)
                 return value
             else:
                 raise NotAuthorized("Not authorized to update '%s'" % self.name)
@@ -190,10 +193,15 @@ class Relationship(Field):
             if value is None:
                 related_obj = None
             else:
-                related_obj = self.resource.to_obj(value)
+                if all(col.key in value for col in self.resource._primary_keys()):
+                    # has all PKs, its an update
+                    related_obj = self.resource.apply_transformers(value, 'update_obj')
+                else:
+                    # its a create
+                    related_obj = self.resource.apply_transformers(value, 'create_obj')
 
-            log.debug('disabled: setattr(%s, %s, %s)' % obj, self.name, related_obj)
-            # setattr(obj, self.name, related_obj)
+            log.debug('setattr(%s, %s, %s)', obj, self.name, related_obj)
+            setattr(obj, self.name, related_obj)
 
     def from_obj(self, obj, **kwargs):
 
@@ -203,7 +211,7 @@ class Relationship(Field):
         related_obj = getattr(obj, self.name, None)
 
         if related_obj:
-            return self.resource.to_dict(related_obj)
+            return self.resource.serialize(related_obj)
 
 
 class ListRelationship(Field):
@@ -227,7 +235,7 @@ class ListRelationship(Field):
         related_objs = getattr(obj, self.name, None)
 
         if related_objs:
-            return [self.resource.to_dict(related_obj)
+            return [self.resource.serialize(related_obj)
                     for related_obj in related_objs]
         else:
             return []
@@ -236,8 +244,16 @@ class ListRelationship(Field):
 
         if self.authorization.can_update(obj, values, **obj_data):
             # log.debug('setting %s.%s = %s', obj, self.name, values)
-            related_objs = [self.resource.to_obj(value)
-                            for value in values]
+            related_objs = []
+            for value in values:
+                if all(col.key in value for col in self.resource._primary_keys()):
+                    # has all PKs, its an update
+                    related_obj = self.resource.apply_transformers(value, 'update_obj')
+                else:
+                    # its a create
+                    related_obj = self.resource.apply_transformers(value, 'create_obj')
+
+                related_objs.append(related_obj)
 
             setattr(obj, self.name, related_objs)
 
@@ -259,7 +275,7 @@ class FilteredListRelationship(ListRelationship):
             if self.list_filter:
                 related_objs = filter(self.list_filter, related_objs)
 
-            return [self.resource.to_dict(related_obj)
+            return [self.resource.serialize(related_obj)
                     for related_obj in related_objs]
         else:
             return []

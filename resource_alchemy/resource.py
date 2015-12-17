@@ -1,10 +1,11 @@
 import math
 import re
 import ujson as json
-from flask import jsonify
+from flask import jsonify, request
 from flask.views import MethodView, MethodViewType, View
+from sqlalchemy import inspect
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-from .exceptions import NotAuthorized
+from .exceptions import EXCEPTIONS, NotAuthorized
 from .fields import Field, Relationship, ListRelationship
 from .authorization import NoAuthorization, FullAuthorization
 
@@ -36,8 +37,6 @@ def resource_route(arg=None, **kwargs):
         return make_route
 
 
-
-
 class ModelTransformer(object):
 
     @classmethod
@@ -51,6 +50,9 @@ class ModelTransformer(object):
         for key, field in resource._fields():
             result[key] = field.from_obj(obj)
 
+        for key, relationship in resource._relationships():
+            result[key] = relationship.encode(obj)
+
         return result
 
     @classmethod
@@ -58,7 +60,53 @@ class ModelTransformer(object):
         return [cls.serialize_one(resource, obj, **kwargs) for obj in objs]
 
     @classmethod
-    def deserialize_one(cls, resource, obj, **kwargs):
+    def create_obj(cls, resource, obj_data):
+        if resource.meta.authorization.can_create(obj_data):
+            obj = resource.meta.model()
+            obj = cls.to_obj(resource, obj, obj_data)
+        return obj
+
+    @classmethod
+    def update_obj(cls, resource, obj_data):
+
+        model_pks = (col.key for col in resource._primary_keys())
+
+        obj_pks = tuple(obj_data[pk] for pk in model_pks)
+
+        obj = resource.get_query.get(obj_pks)
+
+        if obj and not resource.meta.authorization.can_read(obj):
+            raise NotAuthorized('Not authorized to read object')
+
+        if resource.meta.authorization.can_update(obj):
+            return cls.to_obj(resource, obj, obj_data)
+        else:
+            raise NotAuthorized('Not authorized to edit object')
+
+    @classmethod
+    def to_obj(cls, resource, obj, obj_data):
+
+        for key, field in resource._fields():
+            # TODO: Better checking of field setting on creating
+            if key in obj_data:
+                value = obj_data[key]
+                # Ignore fields that aren't writable
+                if field.authorization.can_update(obj, value, **obj_data):
+                    print key, field, obj, value, obj_data
+                    field.to_obj(obj, value, **obj_data)
+
+        for key, field in resource._relationships():
+            # TODO: Better checking of field setting on creating
+            if key in obj_data:
+                value = obj_data[key]
+                # Ignore fields that aren't writable
+                if field.authorization.can_update(obj, value, **obj_data):
+                    field.to_obj(obj, value, **obj_data)
+
+        return obj
+
+    @classmethod
+    def deserialize_one(cls, resource, obj=None, **kwargs):
         pass
 
     @classmethod
@@ -73,7 +121,6 @@ class ModelResourceMetaclass(type):
     method_options = {}
     results_per_page = 100
     transformers = [ModelTransformer]
-
 
     def __new__(cls, name, bases, attrs):
 
@@ -135,6 +182,10 @@ class Resource(object):
         for attr, value in cls.__dict__.iteritems():
             if isinstance(value, (Field)) and not isinstance(value, (Relationship, ListRelationship)):
                 yield (attr, value)
+
+    @classmethod
+    def _primary_keys(cls):
+        return inspect(cls.meta.model).primary_key
 
     @classmethod
     def _extra_routes(cls):
@@ -419,7 +470,6 @@ class ApiResource(ModelResource):
         obj = super(ApiResource, cls).to_obj(obj_data)
 
         obj = cls.post_update(obj, obj_data)
-
         session.add(obj)
         session.commit()
 
@@ -516,18 +566,22 @@ class RestResource(MethodView, Resource):
 
     @hybrid_method
     def post(self):
-        # create a new user
-        pass
+        obj_data = request.json
+        result = self.apply_transformers(obj_data, 'create_obj')
+        session = self.meta.model.query.session  # oh god why
+        session.add(result)
+        session.commit()
+        return jsonify(self.serialize(result))
 
     @hybrid_method
     def delete(self, pk):
-        # delete a single user
         pass
 
     @hybrid_method
     def put(self, pk):
-        # update a single user
-        pass
+        obj_data = request.json
+        result = self.apply_transformers(obj_data, 'update_obj')
+        return jsonify(self.serialize(result))
 
     @hybrid_method
     def get_one(cls, pk, **kwargs):
@@ -592,8 +646,25 @@ class RestResource(MethodView, Resource):
                 obj = transform(cls, obj, **kwargs)
         return obj
 
+    @classmethod
+    def register_error_handlers(cls, app):
+
+        def handle_alchemy_exception(error):
+            response = jsonify(error.to_dict())
+            response.status_code = error.status_code
+            return response
+
+        for exception in EXCEPTIONS:
+            register_handler = app.errorhandler(exception)
+            register_handler(handle_alchemy_exception)
+
+        app.__resource_alchemy_errorhandlers_registered = True
+
     @hybrid_method
     def register_api(cls, app, pk='id', pk_type='int'):
+
+        if not hasattr(app, '__resource_alchemy_errorhandlers_registered'):
+            cls.register_error_handlers(app)
 
         resource_name = cls.meta.name
         resource_url = '/%s/' % resource_name
@@ -612,7 +683,7 @@ class RestResource(MethodView, Resource):
                          view_func=view_func,
                          methods=['GET', 'PUT', 'DELETE'])
 
-        cls.json_schema = app.route('%sschema/' % resource_url)(cls.json_schema)
+        register_func = app.route('%sschema/' % resource_url, endpoint='%s_schema' % resource_name, methods=['GET'])(cls.json_schema)
 
         for extra_route in cls._extra_routes():
             route = extra_route.pop('route')
