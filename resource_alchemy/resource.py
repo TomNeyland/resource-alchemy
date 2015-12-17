@@ -238,7 +238,7 @@ class Resource(object):
         return obj
 
     @classmethod
-    def json_schema(cls):
+    def _schema(cls):
 
         schema = {
             'id': cls.meta.name,
@@ -262,7 +262,11 @@ class Resource(object):
         if required_fields:
             schema['required'] = required_fields
 
-        return jsonify(schema)
+        return schema
+
+    @classmethod
+    def _json_schema(cls):
+        return jsonify(cls._schema())
 
 
 class JSONResource(object):
@@ -683,7 +687,7 @@ class RestResource(MethodView, Resource):
                          view_func=view_func,
                          methods=['GET', 'PUT', 'DELETE'])
 
-        register_func = app.route('%sschema/' % resource_url, endpoint='%s_schema' % resource_name, methods=['GET'])(cls.json_schema)
+        register_func = app.route('%sschema/' % resource_url, endpoint='%s_schema' % resource_name, methods=['GET'])(cls._json_schema)
 
         for extra_route in cls._extra_routes():
             route = extra_route.pop('route')
