@@ -57,7 +57,6 @@ class UserResource(Resource):
 
 class TestCase(PythonTestCase):
 
-
     def setUp(self):
         with session_scope():
             Base.metadata.create_all(engine)
@@ -65,12 +64,6 @@ class TestCase(PythonTestCase):
     def tearDown(self):
         with session_scope():
             Base.metadata.drop_all(engine)
-
-
-class TestObj(object):
-
-    def __init__(self, *args, **kwargs):
-        self.__dict__.update(kwargs)
 
 
 @contextmanager

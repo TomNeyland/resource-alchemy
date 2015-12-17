@@ -11,7 +11,7 @@ from preggy import expect
 
 from resource_alchemy import Resource, Field
 from resource_alchemy.resource import RestResource
-from tests.base import TestCase, TestObj, UserResource, User, session_scope
+from tests.base import TestCase, UserResource, User, session_scope
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, Boolean
@@ -21,7 +21,7 @@ class JSONSchemaTestCase(TestCase):
 
     def setUp(self):
         super(JSONSchemaTestCase, self).setUp()
-        self.json_schema = UserResource.json_schema()
+        self.json_schema = UserResource._schema()
 
     def test_schema_type(self):
         expect(self.json_schema['type']).to_equal('object')
