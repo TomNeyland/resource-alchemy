@@ -26,6 +26,7 @@ from .resource import (Resource,
                        ModelResource,
                        ApiResource,
                        RestResource,
+                       ModelTransformer,
                        resource_route)
 
 
@@ -33,3 +34,5 @@ from .authorization import (FullAuthorization,
                             NoAuthorization,
                             ReadOnlyAuthorization,
                             PropertyAuthorization)
+
+from .exceptions import (BaseException, EXCEPTIONS,)
