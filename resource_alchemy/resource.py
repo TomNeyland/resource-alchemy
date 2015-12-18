@@ -121,6 +121,7 @@ class ModelResourceMetaclass(type):
     method_options = {}
     results_per_page = 100
     transformers = [ModelTransformer]
+    decorators = []
 
     def __new__(cls, name, bases, attrs):
 
@@ -193,6 +194,9 @@ class Resource(object):
             if hasattr(value, '__func__') and hasattr(value.__func__, '_resource_route'):
                 func = getattr(cls, attr)
                 options = dict(**value.__func__._resource_route)
+                if cls.meta.decorators:
+                    func = reduce(lambda func, decorator: decorator(func), cls.meta.decorators, func)
+
                 options['view_func'] = func
 
                 relative = options.pop('relative')
@@ -553,7 +557,6 @@ class RestResource(MethodView, Resource):
     class meta:
         pass
 
-
     @hybrid_method
     def get(self, pk=None):
         if pk is None:
@@ -575,7 +578,7 @@ class RestResource(MethodView, Resource):
         session = self.meta.model.query.session  # oh god why
         session.add(result)
         session.commit()
-        return jsonify(self.serialize(result))
+        return jsonify(self.serialize(result)), 201
 
     @hybrid_method
     def delete(self, pk):
@@ -585,7 +588,9 @@ class RestResource(MethodView, Resource):
     def put(self, pk):
         obj_data = request.json
         result = self.apply_transformers(obj_data, 'update_obj')
-        return jsonify(self.serialize(result))
+        session.merge(result)
+        session.commit()
+        return jsonify(self.serialize(result)), 200
 
     @hybrid_method
     def get_one(cls, pk, **kwargs):
@@ -675,6 +680,9 @@ class RestResource(MethodView, Resource):
 
         view_func = cls.as_view(resource_name)
 
+        if cls.meta.decorators:
+            view_func = reduce(lambda func, decorator: decorator(func), cls.meta.decorators, view_func)
+
         app.add_url_rule(resource_url,
                          view_func=view_func,
                          methods=['GET', ])
@@ -687,12 +695,11 @@ class RestResource(MethodView, Resource):
                          view_func=view_func,
                          methods=['GET', 'PUT', 'DELETE'])
 
-        register_func = app.route('%sschema/' % resource_url, endpoint='%s_schema' % resource_name, methods=['GET'])(cls._json_schema)
+        register_func = app.route('%sschema/' % resource_url, endpoint='%s_schema' %
+                                  resource_name, methods=['GET'])(cls._json_schema)
 
         for extra_route in cls._extra_routes():
             route = extra_route.pop('route')
             app.add_url_rule(route, **extra_route)
 
         return view_func
-
-        # register_api(UserAPI, 'user_api', '/users/', pk='user_id')
