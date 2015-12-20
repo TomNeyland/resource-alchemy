@@ -5,7 +5,7 @@ from flask import jsonify, request
 from flask.views import MethodView, MethodViewType, View
 from sqlalchemy import inspect
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-from .exceptions import EXCEPTIONS, NotAuthorized
+from .exceptions import EXCEPTIONS, NotAuthorized, BaseException
 from .fields import Field, Relationship, ListRelationship
 from .authorization import NoAuthorization, FullAuthorization
 
@@ -663,9 +663,9 @@ class RestResource(MethodView, Resource):
             response.status_code = error.status_code
             return response
 
-        for exception in EXCEPTIONS:
-            register_handler = app.errorhandler(exception)
-            register_handler(handle_alchemy_exception)
+        
+        register_handler = app.errorhandler(BaseException)
+        register_handler(handle_alchemy_exception)
 
         app.__resource_alchemy_errorhandlers_registered = True
 
