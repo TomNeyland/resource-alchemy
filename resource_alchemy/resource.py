@@ -273,20 +273,6 @@ class Resource(object):
         return jsonify(cls._schema())
 
 
-class JSONResource(object):
-
-    @classmethod
-    def json_encode(cls, obj, **options):
-        obj_data = cls.encode(obj, **options)
-        obj_json = json.dumps(obj_data)
-        return obj_json
-
-    @classmethod
-    def json_decode(cls, obj, obj_data, **options):
-        obj = cls.decode(obj, obj_data, **options)
-        return obj
-
-
 class ModelResource(object):
 
     __metaclass__ = ModelResourceMetaclass
