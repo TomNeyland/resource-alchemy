@@ -22,7 +22,6 @@ from .fields import (Field,
                      IntervalField)
 
 from .resource import (Resource,
-                       JSONResource,
                        ModelResource,
                        ApiResource,
                        RestResource,
