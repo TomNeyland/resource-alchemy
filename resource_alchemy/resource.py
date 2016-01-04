@@ -649,7 +649,7 @@ class RestResource(MethodView, Resource):
             response.status_code = error.status_code
             return response
 
-        
+
         register_handler = app.errorhandler(BaseException)
         register_handler(handle_alchemy_exception)
 
