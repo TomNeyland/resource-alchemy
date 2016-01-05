@@ -5,6 +5,8 @@
 # http://www.opensource.org/licenses/TBD-license
 # Copyright (c) 2015, Tom Neyland <tcneyland+github@gmail.com>
 
+.PHONY: docs
+
 # lists all available targets
 list:
 	@sh -c "$(MAKE) -p no_targets__ | awk -F':' '/^[a-zA-Z0-9][^\$$#\/\\t=]*:([^=]|$$)/ {split(\$$1,A,/ /);for(i in A)print A[i]}' | grep -v '__\$$' | grep -v 'make\[1\]' | grep -v 'Makefile' | sort"
@@ -30,5 +32,6 @@ coverage-html: unit
 tox:
 	@tox
 
-#docs:
-	#@cd resource_alchemy/docs && make html && open _build/html/index.html
+docs:
+	@sphinx-apidoc -o docs resource_alchemy
+	@cd docs && make html && open _build/html/index.html

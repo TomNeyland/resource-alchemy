@@ -23,14 +23,16 @@ tests_require = [
     'ipdb',
     'coveralls',
     'sphinx',
+    'sphinx-rtd-theme',
+    'recommonmark',
 ]
 
 setup(
     name='resource_alchemy',
     version=__version__,
-    description='Easily create SqlAlchemy backed API endpoints and resources',
+    description='Easily create SQLAlchemy backed API endpoints and resources',
     long_description='''
-Easily create SqlAlchemy backed API endpoints and resources
+Easily create SQLAlchemy backed API endpoints and resources
 ''',
     keywords='sqlalchemy flask rest resource json api sql',
     author='Tom Neyland',
