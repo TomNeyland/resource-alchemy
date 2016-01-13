@@ -1,8 +1,6 @@
 import math
 import re
-
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-
 from .search import search
 
 
