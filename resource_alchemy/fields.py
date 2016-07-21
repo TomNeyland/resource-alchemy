@@ -1,10 +1,10 @@
-import datetime
 import dateutil.parser
 import logging
 from datetime import datetime, date
-from sqlalchemy.ext.hybrid import hybrid_method
-from .exceptions import NotAuthorized
 
+from sqlalchemy.ext.hybrid import hybrid_method
+
+from .exceptions import NotAuthorized
 
 
 log = logging.getLogger(__name__)
