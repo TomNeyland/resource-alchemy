@@ -1,13 +1,15 @@
 import math
 import re
-import ujson as json
+
 from flask import jsonify, request
 from flask.views import MethodView, MethodViewType, View
+from functools import reduce
 from sqlalchemy import inspect
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-from .exceptions import EXCEPTIONS, NotAuthorized, BaseException
+
+from .exceptions import NotAuthorized, BaseException
 from .fields import Field, Relationship, ListRelationship
-from .authorization import NoAuthorization, FullAuthorization
+from .authorization import FullAuthorization
 
 
 def convert_name(name):
@@ -110,8 +112,8 @@ class ModelTransformer(object):
         pass
 
     @classmethod
-    def deserialize_list(cls, resource, objw, **kwargs):
-        return [deserialize_one(resource, obj, **kwargs) for obj in objs]
+    def deserialize_list(cls, resource, objs, **kwargs):
+        return [cls.deserialize_one(resource, obj, **kwargs) for obj in objs]
 
 
 class ModelResourceMetaclass(type):
@@ -350,8 +352,6 @@ class ModelResource(object):
         if not isinstance(obj_pk, tuple):
             obj_pk = (obj_pk,)
 
-        Model = cls.meta.model
-
         query = cls.query('get')
 
         obj = query.get(obj_pk)
@@ -365,8 +365,6 @@ class ModelResource(object):
 
     @hybrid_method
     def query(cls, mode='search'):
-
-        Model = cls.meta.model
 
         if mode is 'get':
             query = cls.get_query
@@ -648,7 +646,6 @@ class RestResource(MethodView, Resource):
             response = jsonify(error.to_dict())
             response.status_code = error.status_code
             return response
-
 
         register_handler = app.errorhandler(BaseException)
         register_handler(handle_alchemy_exception)

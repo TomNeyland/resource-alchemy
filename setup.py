@@ -9,7 +9,7 @@
 # Copyright (c) 2015, Tom Neyland <tcneyland+github@gmail.com>
 
 from setuptools import setup, find_packages
-#from resource_alchemy.version import __version__
+# from resource_alchemy.version import __version__
 
 __version__ = '0.1.0'
 
