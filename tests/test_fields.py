@@ -1,6 +1,6 @@
 from preggy import expect
 
-from tests.base import TestCase, UserResource
+from tests.base import TestCase, UserResource, OrderResource
 
 
 class FieldTestCase(TestCase):
@@ -49,3 +49,81 @@ class FieldTestCase(TestCase):
             }, {
                 'type': 'null'
             }]})
+
+
+class RelationshipTestCase(TestCase):
+
+    def test_json_schema(self):
+        relationship = OrderResource.user.json_schema()
+
+        expect(relationship).to_equal({
+            'type': 'object',
+            'properties': {
+                'first_name': {
+                    'anyOf': [{
+                        'type': 'string'
+                    }, {
+                        'type': 'null'
+                    }]
+                },
+                'last_name': {
+                    'anyOf': [{
+                        'type': 'string'
+                    }, {
+                        'type': 'null'
+                    }]
+                },
+                'user_id': {
+                    'readonly': True,
+                    'type': 'integer',
+                    'description': 'The user id'
+                },
+                'age': {
+                    'readonly': True,
+                    'type': 'integer'
+                },
+                'is_active': {
+                    'readonly': True,
+                    'anyOf': [{
+                        'type': 'boolean'
+                    }, {
+                        'type': 'null'
+                    }]
+                },
+                'savings': {
+                    'readonly': True,
+                    'type': 'number'
+                },
+                'biography': {
+                    'readonly': True,
+                    'anyOf': [{
+                        'type': 'string'
+                    }, {
+                        'type': 'null'
+                    }]
+                }
+            },
+            'readonly': True,
+            'description': 'the user'
+        })
+
+
+class ListRelationshipTestCase(TestCase):
+
+    def test_json_schema(self):
+        relationship = UserResource.orders.json_schema()
+
+        expect(relationship).to_equal({
+            'items': {
+                'properties': {
+                    'order_id': {
+                        'readonly': True,
+                        'type': 'integer'
+                    }
+                },
+                'title': 'Orders',
+                'type': 'object'
+            },
+            'readonly': True,
+            'type': 'array'
+        })

@@ -185,6 +185,23 @@ class Relationship(Field):
         else:
             return self._resource
 
+    def json_schema(self):
+        schema = {
+            'type': 'object',
+            'properties': {}
+        }
+
+        if 'description' in self.options:
+            schema['description'] = self.options['description']
+
+        if self.read_only:
+            schema['readonly'] = self.read_only
+
+        for key, field in self.resource._fields():
+            schema['properties'][key] = field.json_schema()
+
+        return schema
+
     def to_obj(self, obj, value, **obj_data):
 
         if self.authorization.can_update(obj, value, **obj_data):
@@ -224,6 +241,26 @@ class ListRelationship(Field):
             return self._resource()
         else:
             return self._resource
+
+    def json_schema(self):
+        schema = {
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {}
+            }
+        }
+
+        if 'title' in self.options:
+            schema['items']['title'] = self.options['title']
+
+        if self.read_only:
+            schema['readonly'] = self.read_only
+
+        for key, field in self.resource._fields():
+            schema['items']['properties'][key] = field.json_schema()
+
+        return schema
 
     def from_obj(self, obj, **kwargs):
 
