@@ -259,9 +259,12 @@ class Resource(object):
             schema['description'] = cls.meta.description
 
         for attr, field in cls._fields():
-
             field_schema = field.json_schema()
             schema['items']['properties'][attr] = field_schema
+
+        for attr, relationship in cls._relationships():
+            relationship_schema = relationship.json_schema()
+            schema['items']['properties'][attr] = relationship_schema
 
         required_fields = [field.key for attr, field in cls._fields() if field.required is True]
 

@@ -40,15 +40,21 @@ class JSONSchemaTestCase(TestCase):
     def test_description(self):
         expect(self.json_schema['description']).to_equal('User resource')
 
+    def test_relationship(self):
+        orders_schema = self.json_schema['items']['properties']['orders']
+
+        expect(orders_schema).not_to_be_null()
+        expect(orders_schema['type']).to_equal('array')
+
 
 class RestUserResource(RestResource):
 
-        user_id = Field()
-        first_name = Field()
-        last_name = Field()
+    user_id = Field()
+    first_name = Field()
+    last_name = Field()
 
-        class meta:
-            model = User
+    class meta:
+        model = User
 
 
 class RestUserResourceTestCase(TestCase):
