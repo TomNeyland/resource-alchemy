@@ -148,6 +148,9 @@ class ModelResourceMetaclass(type):
 
         model = getattr(meta_cls, 'model', None)
 
+        includes = getattr(meta_cls, 'includes', None)
+        excludes = getattr(meta_cls, 'excludes', None)
+
         if resource_name is None:
             if model:
                 resource_name = convert_name(model.__name__)
@@ -157,6 +160,22 @@ class ModelResourceMetaclass(type):
         meta_cls.name = resource_name
 
         attrs['meta'] = meta_cls
+
+        if includes is not None and excludes is not None:
+            raise Exception(
+                'Cannot define both includes and excludes for {}. Please remove one.'.format(resource_name))
+        elif includes is not None:
+            for value in includes:
+                attrs[value] = Field()
+        elif excludes is not None:
+            if not model:
+                raise Exception('A model is required when using excludes for {}'.format(resource_name))
+
+            mapper = inspect(model)
+
+            for column in mapper.columns:
+                if column.key not in excludes:
+                    attrs[column.key] = Field()
 
         for attr, value in attrs.iteritems():
 
