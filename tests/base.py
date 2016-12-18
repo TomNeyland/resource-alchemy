@@ -1,12 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-# This file is part of resource_alchemy.
-# https://github.com/TomNeyland/resource-alchemy
-
-# Licensed under the TBD license:
-# http://www.opensource.org/licenses/TBD-license
-# Copyright (c) 2015, Tom Neyland <tcneyland+github@gmail.com>
 from unittest import TestCase as PythonTestCase
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, String, Boolean, Text, Integer, Float, ForeignKey
@@ -17,8 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from contextlib import contextmanager
 
-# an Engine, which the Session will use for connection
-# resources
+# an Engine, which the Session will use for connection resources
 engine = create_engine('sqlite://')
 
 # create a configured "Session" class
