@@ -33,5 +33,6 @@ tox:
 	@tox
 
 docs:
+	@cp README.md docs/readme.md # ensure readme is always up to date when making docs
 	@sphinx-apidoc -o docs resource_alchemy
 	@cd docs && make html && open _build/html/index.html

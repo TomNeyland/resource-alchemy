@@ -15,12 +15,24 @@
 import sys
 import os
 import shlex
-# from recommonmark.parser import CommonMarkParser
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('.'))
+
+from recommonmark.parser import CommonMarkParser
+from recommonmark.transform import AutoStructify
+
+# Markdown support
+
+source_parsers = {
+    '.md': CommonMarkParser,
+}
+
+# The suffix of source filenames.
+source_suffix = ['.rst', '.md']
 
 # -- General configuration ------------------------------------------------
 
@@ -35,6 +47,7 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.coverage',
     'sphinx.ext.viewcode',
+    'sphinx.ext.napoleon',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -50,6 +63,8 @@ master_doc = 'index'
 project = u'Resource Alchemy'
 copyright = u'2016, Tom Neyland'
 author = u'Tom Neyland'
+
+github_doc_root = 'https://github.com/TomNeyland/resource-alchemy/tree/master/docs/'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -135,7 +150,7 @@ html_theme = 'sphinx_rtd_theme'
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-#html_title = None
+html_title = 'Resource Alchemy'
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -220,25 +235,25 @@ htmlhelp_basename = 'ResourceAlchemydoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 
-# Latex figure (float) alignment
-#'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'ResourceAlchemy.tex', u'Resource Alchemy Documentation',
-   u'Tom Neyland', 'manual'),
+    (master_doc, 'ResourceAlchemy.tex', u'Resource Alchemy Documentation',
+     u'Tom Neyland', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -281,9 +296,9 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'ResourceAlchemy', u'Resource Alchemy Documentation',
-   author, 'ResourceAlchemy', 'One line description of project.',
-   'Miscellaneous'),
+    (master_doc, 'ResourceAlchemy', u'Resource Alchemy Documentation',
+     author, 'ResourceAlchemy', 'One line description of project.',
+     'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -298,13 +313,10 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-# Markdown support
 
-from recommonmark.parser import CommonMarkParser
-
-# The suffix of source filenames.
-source_suffix = ['.rst', '.md']
-
-source_parsers = {
-    '.md': CommonMarkParser,
-}
+def setup(app):
+    app.add_config_value('recommonmark_config', {
+        'url_resolver': lambda url: github_doc_root + url,
+        'auto_toc_tree_section': 'Contents',
+    }, True)
+    app.add_transform(AutoStructify)
