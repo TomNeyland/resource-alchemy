@@ -1,11 +1,14 @@
 from preggy import expect
 
-from resource_alchemy.resource import RestResource
+from resource_alchemy import RestResource, Field
 
 from ..base import TestCase, User, session_scope
 
 
 class UserResource(RestResource):
+
+    age = Field(read_only=False)
+    is_active = Field(required=True)
 
     class meta:
         model = User
@@ -46,3 +49,7 @@ class ExcludesUserResourceTestCase(TestCase):
 
         expect(users[0]).to_equal(dict(age=18, savings=100.0, is_active=True, biography=None))
         expect(users[1]).to_equal(dict(age=19, savings=200.0, is_active=False, biography=None))
+
+    def test_existing_fields(self):
+        expect(UserResource.age.read_only).to_equal(False)
+        expect(UserResource.is_active.required).to_equal(True)
