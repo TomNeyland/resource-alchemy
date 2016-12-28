@@ -594,6 +594,7 @@ class RestResource(MethodView, Resource):
     def put(self, pk):
         obj_data = request.json
         result = self.apply_transformers(obj_data, 'update_obj')
+        session = self.meta.model.query.session  # oh god why
         session.merge(result)
         session.commit()
         return jsonify(self.serialize(result)), 200
@@ -649,9 +650,9 @@ class RestResource(MethodView, Resource):
     @hybrid_method
     def deserialize(cls, obj, **kwargs):
         if isinstance(obj, (list, tuple, set)):
-            return self.apply_transformers(obj, 'serialize_list', **kwargs)
+            return cls.apply_transformers(obj, 'serialize_list', **kwargs)
         else:
-            return self.apply_transformers(obj, 'serialize_one')
+            return cls.apply_transformers(obj, 'serialize_one')
 
     @hybrid_method
     def apply_transformers(cls, obj, transform_func, **kwargs):
