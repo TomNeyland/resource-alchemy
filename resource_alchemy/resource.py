@@ -161,21 +161,16 @@ class ModelResourceMetaclass(type):
 
         attrs['meta'] = meta_cls
 
-        if includes is not None and excludes is not None:
+        if includes and excludes:
             raise Exception(
                 'Cannot define both includes and excludes for {}. Please remove one.'.format(resource_name))
         elif includes is not None:
-            for value in includes:
-                attrs[value] = Field()
+            cls.process_includes(includes, attrs)
         elif excludes is not None:
             if not model:
                 raise Exception('A model is required when using excludes for {}'.format(resource_name))
 
-            mapper = inspect(model)
-
-            for column in mapper.columns:
-                if column.key not in excludes:
-                    attrs[column.key] = Field()
+            cls.process_excludes(excludes, attrs, model)
 
         for attr, value in attrs.iteritems():
 
@@ -193,6 +188,23 @@ class ModelResourceMetaclass(type):
 
                 if model:
                     value.model = model
+
+    @classmethod
+    def process_includes(cls, includes, attrs):
+        for value in includes:
+            # don't override existing declared Fields
+            if value not in attrs:
+                attrs[value] = Field()
+
+    @classmethod
+    def process_excludes(cls, excludes, attrs, model):
+        mapper = inspect(model)
+
+        for column in mapper.columns:
+            key = column.key
+            # don't override existing declared Fields
+            if key not in excludes and key not in attrs:
+                attrs[key] = Field()
 
 
 class Resource(object):
